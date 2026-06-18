@@ -1,0 +1,47 @@
+
+1. For the interpretation of differences in comuting time among genders:
+
+## Gender Dynamics in the Context of the Wage Gap:
+
+#Shorter Commutes for Women:
+
+Women are more likely to have shorter commutes, potentially reflecting constraints such as caregiving responsibilities or a preference for jobs closer to home.
+These constraints might limit their access to higher-paying jobs requiring longer commutes, contributing to the gender wage gap.
+
+#Longer Commutes for Men:
+
+Men dominate the "Long" and "Very Long Commute" categories, suggesting they may have greater flexibility or willingness to travel for work.
+This could give men access to better-paying jobs that are geographically distant.
+
+
+Tobit Model interpretation:
+
+# Sample Size
+
+Sample Size:
+Total: 88,472 observations.
+Censored: 7,570 (cases where the outcome variable, log_income, is not observed due to non-participation in the labor force).
+Observed: 80,902.
+
+
+Rho (ρ): -0.7586, significant at p<0.001
+Indicates a strong negative correlation between the error terms of the selection and outcome equations.
+This confirms the presence of selection bias, making the Tobit Type II model appropriate. Without accounting for selection bias, the effect of gender on wages would likely be underestimated or misrepresented.
+
+# Selection Equation (Probit)
+This equation models the probability of participation in the labor market (whether an individual is working or not).
+
+# Outcome equation
+This equation models log of income (log_income) for those who participate in the labor market.
+
+sexo_dummy: -0.1447, significant (p<0.001
+Interpretation: Women earn 14.47% less than men on average, holding all other factors constant.
+This is a critical finding and directly supports the hypothesis of a gender wage gap among workers.
+
+edad: 0.0016, significant (p<0.001)
+Interpretation: Older age is associated with slightly higher income, likely reflecting accumulated experience or seniority.
+
+education_composite: 0.2908, significant (
+p<0.001
+Interpretation: Education has a strong positive effect on income. A 1-unit increase in the composite education index is associated with a 29.08% increase in income, highlighting the importance of educational attainment in addressing income disparities.
+

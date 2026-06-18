@@ -1,0 +1,7 @@
+# R workspace files
+.RData
+.Rhistory
+.Rproj.user/
+
+# macOS
+.DS_Store

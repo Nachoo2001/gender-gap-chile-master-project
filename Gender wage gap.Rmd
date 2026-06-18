@@ -1,0 +1,1739 @@
+---
+title: "Gender Wage Gap in Chile"
+author: "Ignacio ROUSSY, Dorian MARTY"
+date: "`r Sys.Date()`"
+output: 
+  pdf_document:
+    toc: true        
+    number_sections: true
+  html_document: 
+    toc: true         
+    toc_depth: 2      
+    toc_float: true 
+bibliography: ProjetDiaye.bib
+csl: isara-iso-690.csl
+---
+
+```{r include=FALSE}
+library(haven)
+library(dplyr)
+library(summarytools)
+library(ggplot2)
+library(stargazer)
+library(gmodels)
+library(stargazer)
+library(mice)
+
+#Load data set
+CASEN_2022 <- read_dta("~/Downloads/CASEN 2022.dta")
+
+### ========== Question 1: Create a sample of active individuals according to ILO) =========== ###
+
+
+# Convert labelled variables to numeric
+sapply(CASEN_2022[, c("o1", "o3", "o5", "o6")], class)
+
+CASEN_2022 <- CASEN_2022 %>%
+  mutate(
+    o1 = as.integer(o1),
+    o3 = as.integer(o3),
+    o5 = as.integer(o5),
+    o6 = as.integer(o6),
+    edad = as.integer(edad)
+  )
+
+# Create active sample
+activeindividuals <- CASEN_2022 %>%
+  filter(
+    (o1 == 1 | o3 == 1) |          # Employed conditions
+      (o1 == 2 & o5 == 1 & o6 == 1) # Unemployed conditions
+  ) %>%
+  filter(edad >= 15) # Exclude individuals under 15 years old
+
+```
+
+# Introduction
+
+Chile is recognized for its economic and political stability in a South America region marked by a strong heterogeneity. In contrast with its neighbor, Argentina, Chile contained inflation and kept a positive growth rate. Chile is classified by the World Bank as a high-income economy and is part of the most prosperous countries in South America. The main sector by GDP in 2012 were mining, mainly copper and lithium. Although Chile has a strong social security system and low corruption, it experiences significant economic inequality with a Gini coefficient at 44 in 2017, which is medium. Furthermore, Chile has been put in the spotlight in 2022 during the Chilean constitutional referendum where the country could have been the first one, in the world, to constitutionalize the Abortion rights and could have had, by the same occasion, the longest constitution in the world. This first draft, since the Pinochet Regime, has been disapproved but a new constitutional convention is currently working on a brand new project. This historic supreme law modification should play a role in the reduction of the inequalities in particular for women and indigenous population. Indeed, Pinochet's legacy has been a real obstacle to social and economic reforms.\
+In this paper, we propose to have an effective look on the gender inequalities in Chile. We will focus on the gender wage gap leaning on a cross-sectional dataset from the *Ministerio de Desarrollo Social y Familia* of Chile. After a brief presentation of the literature review, we will present our empirical analysis before finishing by results and conclusion.
+
+## Literature Review
+
+October of 2019 has been marked by a huge protestation over the whole territory in Chile. The "*Estallido Social*" or "Social outburst" in English, is the result of a revolt against neo-liberal policies, the cost of living and social inequality. The last straw was the increase in public transport fares this October of 2019. The revolt was marked by a quite huge repression and by provocations from the government elite. This was the case of the Minister of Economy, J. A. Fontaine, who after increasing the price of the metro ticket, invited its users to "get up at dawn" to take it at the cheapest time of the day [@marquezRevueltaInsurrectosContra2021]. These Chilean protests showed at what point unequal the country was. As a paragon of this pit between the 1% the richest and the others, took pride of place, Sebastián Piñera, President at this time, and the third richest person in Chile according to Forbes. Protests led the government to take the decision to write a new constitution and to the election of a left-wing president in 2022, Gabriel Boric.
+
+In Chile, inequalities are high, particularly between men and women and people are not insensitive. This is illustrated in the last @74CreeQue2023 report "Día Internacional de la Mujer 2023" where Chile counts 74% of the population considering that there is inequality between men and women in terms of social, political and/or economic rights. This is more than the global mean at 68%, ranking Chile seventh out of 32 countries led by India (81%), South Africa (79%) and Brazil (78%). Moreover, the gender discrimination is very much alive as Chile was the country in the study where most people (45%) heard a friend or relative say a sexist comment about woman. Finally, Chile seems to have strong gender inequalities and that seems to be perceived as such by the population. Is it effectively the case ?
+
+Understanding the gender wage gap in Chile demands to understand first at what point structural inequalities have their role. This gender gap must not be considered as a direct segregation between a man and a women with equal status, it is the result and the aggregation of multiple inequalities taken together. The main sectors we will study are the Education, the healthcare and the labor.
+
+## Healthcare inequalities
+
+The healthcare sector in Chile consists of two components: a public system, the National Health Fund (FONASA), and a private system, represented by Health Insurance Institutions (ISAPRE). FONASA does not discriminate based on gender or age but faces challenges related to management and resource allocation. It operates as a solidarity-based system, with its primary limitation being the gap between available resources and the needs of its affiliates.
+
+ISAPRE, on the other hand, is perceived as providing access to quality healthcare services but operates inequitably in terms of gender, age, and income. From a gender perspective, the ISAPRE system discriminates against women. This discrimination is primarily rooted in its design, functioning as a private health insurance system that assesses morbidity risk. ISAPRE considers women to be higher risk due to their greater healthcare needs, which stem from their morbidity profile, longer life expectancy, and the exclusive financial responsibility placed on them for reproductive healthcare costs [@pollackEquidadGeneroSistema2002].
+
+Finally, women need to compose either with an overcrowded healthcare system compromising the quality of services, or with a private system which is more expensive for them than for men.
+
+Futhermore, as @didescastilloSegundoInformeSalud2018b demonstrate it in their report, despite progress, challenges remain. Chile has faced ideological disputes over issues like divorce, emergency contraception, abortion under specific conditions, and marriage equality. Structural issues persist, including insufficient sexual education policies, high adolescent pregnancy rates, limited access to reproductive treatments, and inadequate attention to violence. The report highlights the lack of standardized sexual education program that leads to disparities among youth in rural and urban area. Moreover, the barriers concerning the access to contraception affect mostly women from vulnerable communities. The decriminalization of abortion on three grounds faces effective challenges with conscientious objection from healthcare professionals, for instance. Finally, the report underlines the prevalence of sexual and obstetric violence that affects woman well-being.
+
+## Education and Labour inequalities
+
+In 2021, Chilean women had, on average, higher levels of education than men. However, they are concentrated in fields traditionally associated with lower-paying sectors (care, education, services) [@oecdIgualdadGeneroChile2021]. Moreover, gender stereotypes heavily influence these choices, limiting women's access to more lucrative fields like science, technology, engineering, and mathematics (STEM). These first differences have considerable repercussions on women's participation in the labour market. Firstly, @oecdIgualdadGeneroChile2021 makes the observation that only 52% of Chilean women of working age participate in the labor market compared to 74% of men. This rate is below the OECD average and that of many Latin American countries. Then, women earn, on average, 21% less than men in Chile. This gap is exacerbated by their overrepresentation in informal, precarious, or lower-paid jobs. In 2022, the gap widens of 11 points between formal and informal jobs [@ministeriodelahaciendaCuartoReporteIndicadores2022]. Therefore, men earn an average of \$749,046 and women \$586,178 and the gap is 1 point of percentage wider between native and non-native women [@ineEncuestaSuplementariaIngresos2021]. Finally, women perform about three times more domestic and caring work than men. This inequality limits their availability for paid jobs or time-intensive roles according to @oecdIgualdadGeneroChile2021. \newpage
+
+# Empirical analysis
+
+The purpose of our study is to estimate the gender wage gap in Chile and analyse its causes in order to assess the relationship between employment, education and health characteristics, gender and income. We will use advanced statistical techniques in order to untangle the structural characteristics of gender inequality.
+
+## Data
+
+Our analysis leans on the treatment of open-data from CASEN 2022. CASEN for *Encuesta de Caracterización Socioeconómica Nacional* or National Socio-economic Characterisation Survey in english is carried out by the Ministry of Social Development and Family with the aim of providing information that allows, according to the *Observatorio Social del Ministerio de Desarrollo Social y Familia*:\
+- Periodically assess the situation of households and the population, particularly those in poverty and groups identified as priorities by social policy, in relation to demographic, educational, health, housing, employment, and income aspects. Specifically, estimate the extent of poverty and income distribution; identify deficiencies and demands of the population in the aforementioned areas; and evaluate the gaps that separate different social segments and territorial domains.\
+- Evaluate the impact of social policy: estimate the coverage, targeting, and distribution of fiscal expenditure of the main national social programs among households according to their income level, to assess the impact of this spending on household income and its distribution.\
+The survey is bi-annual or tri-annual, the last publication is the one of 2022. The survey is operated on 72 000 households and around 200 000 people that need to participate to a voluntary interview. it covers 335 communes and 8 thematic modules : Resident Registration, Education, Labour, Income, Health, Identities, Networks and Participation, Housing, and Sexual Orientation and Gender Identity.
+
+## Methodology
+
+After cleaning the dataset, we first proceed to the selection of values under study. In the aim to access the gender wage gap, we need to select, not only employed people, but also unemployed one, this group is known as the active population. According to the International Labour Organization, *"an unemployed person is a person aged 15 or over who simultaneously meets three conditions: being unemployed for a given week; being available to take a job within two weeks; having actively sought a job in the last four weeks or having found one starting in less than three months"*. Then an employed individual is defined as *"a person aged 15 or over who has done at least one hour's paid work in a given week, or who is absent from work for certain reasons (annual leave, sickness, maternity, etc.) and for a certain period of time"*.(ILO website)
+
+In order to discriminate people that corresponds to the ILO definition we made the decision to keep these characteristics :\
+- Employed people answered "Yes" to o1 **or** o3\
+- Unemployed people answered "Yes" to o5 **and** o6, **and** "No" to o1\
+- People older than 15 years old
+
+The result is the following (with 1 = male and 2 = Female) :
+
+```{r echo=FALSE}
+
+table(activeindividuals$sexo)
+```
+
+we will proceed to the creation of a composite variable using the PCA method. The purpose is to combine variables such as the employment, education and health characteristics, into one composite variable that summarize the key dimensions in the data. Indeed, Principal Component Analysis (PCA) allows for the joint synthesis of several variables when they are all quantitative, in order to best describe the set of individuals defined by these variables in the descriptive study. Finally, PCA reduces the number of initial variables while retaining a maximum (or optimal) amount of information [@kPrincipalComponentAnalysis2021].\
+Then, by using the clustering method, we will analyse the relationship between employment, education and health characteristics, gender and income. It can be useful in the aim to identify homogeneous groups of individuals within the sample and observing trends.\
+Next step consists in running Tobit regression (type 2). Its purpose is to analyze relationships between different variables involving censored data [@amemiyaTobitModelsSurvey1984]. For instance, by measuring the wage gap, Tobit regression takes into account unemployed people that is not earning anything. The result of our Tobit regression enables to interpret how individual characteristics are affecting the wage.\
+To finish, we will use a Oaxaca-Blinder method. According to @hlavacOaxacaBlinderOaxacaDecomposition2014, "The Blinder-Oaxaca decomposition is a statistical method that decomposes differences in mean outcomes across two groups into a part that is due to group differences in the levels of explanatory variables and a part that is due to differential magnitudes of regression coefficients". In our case, we need to decompose the gender wage gap into two parts: Gap due to characteristics (differences in education, experience, etc.). Gap due to discrimination (unexplained differences in pay not accounted for by observable characteristics).\
+\
+At the end of this study, we will be able to conclude on the nature of the wage gap in Chile.
+
+## Descriptive statistics between gender
+
+### Employment variables
+
+#### Income
+
+The first result is illustrated in the table that follows. It is the real gender wage gap inside the active population. We make the observation that women earn 19% less than men. This result sticks with the literature mentioned before which predicted 21%.
+
+$$100 - ((557712*100)/690997) = 19$$
+
+```{r echo=FALSE}
+descriptive_stats_wage <- activeindividuals %>%
+  group_by(sexo) %>%
+  summarise(
+    mean_income = mean(yoprcor, na.rm = TRUE),
+    median_income = median(yoprcor, na.rm = TRUE),
+    min_wage = min(yoprcor, na.rm = TRUE),
+    max_wage = max(yoprcor, na.rm = TRUE),
+    count = n()
+  )
+print(descriptive_stats_wage)
+```
+
+#### Hourly Income
+
+Then, we analyse more precisely the hourly wage by sex. This data is summarized in the table that follows.
+
+```{r echo=FALSE}
+activeindividuals <- activeindividuals %>%
+  mutate(hourly_wage = ifelse(y1 >= 0 & y2_hrs > 0, y1 / y2_hrs, 0))  # Set hourly_wage to 0 if y2_hrs = 0
+
+descriptive_stats_hourly_wage <- activeindividuals %>%
+  group_by(sexo) %>%
+  summarise(
+    mean_hourly_wage = mean(hourly_wage, na.rm = TRUE),
+    median_hourly_wage = median(hourly_wage, na.rm = TRUE),
+    min_hourly_wage = min(hourly_wage, na.rm = TRUE),
+    max_hourly_wage = max(hourly_wage, na.rm = TRUE),
+    count = n()
+  )
+print(descriptive_stats_hourly_wage)
+```
+
+\
+Women earn less by hour on average than men. Moreover, mean is greater than median for both sex because of the very large wages that drive up wage levels and that distort the mean value. In the other hand, there are many people who earn nothing.\
+
+#### Overtime
+
+To complete our statistical review, we analyse the overtime. To do this, we read the table below that confirms that men are doing more overtime than women and, they are paid more to do so.
+
+```{r echo=FALSE}
+activeindividuals <- activeindividuals %>%
+  mutate(
+    overtime = case_when(
+      y3a_preg == 1 ~ 1,  
+      y3a_preg == 2 ~ 0,  
+      TRUE ~ NA_real_     
+    )
+  )
+
+descriptive_stats_overtime <- activeindividuals %>%
+  group_by(sexo) %>%
+  summarise(
+    total = n(),
+    overtime_yes = sum(overtime == 1, na.rm = TRUE),
+    overtime_no = sum(overtime == 0, na.rm = TRUE),
+    proportion_overtime = mean(overtime, na.rm = TRUE)  
+  )
+
+print(descriptive_stats_overtime)
+#Comment -> Men tend to do more overtime
+
+activeindividuals <- activeindividuals %>%
+  mutate(y3a = ifelse(y3a >= 0, y3a, NA))
+tapply(activeindividuals$y3a, activeindividuals$sexo, summary)
+#Comment -> Men on average earn more from overtime work
+
+```
+
+This result is directly linked with the number of hours worked that seems to be bigger for men than women once again.
+
+#### Number hours worked per week
+
+```{r echo=FALSE}
+## Comparing number of hours worked
+activeindividuals <- activeindividuals %>%
+  mutate(o10 = ifelse(o10 >= 0, o10, NA))
+
+descriptive_stats_hours <- activeindividuals %>%
+  group_by(sexo) %>%
+  summarise(
+    mean_hours = mean(o10, na.rm = TRUE),
+    median_hours = median(o10, na.rm = TRUE),
+    sd_hours = sd(o10, na.rm = TRUE),
+    min_hours = min(o10, na.rm = TRUE),
+    max_hours = max(o10, na.rm = TRUE),
+    n = n()
+  )
+
+print(descriptive_stats_hours)
+#tapply(activeindividuals$o10, activeindividuals$sexo, summary)
+#Comment -> Men tend to work more hours than women 
+
+```
+
+One of the literature result is that women tend to have more informal jobs than men. Regarding to the tables below, we can confirm this trend. By creating a dummy variable, with 1 for formal contract and 0 for free-contract job, we see that the mean is lower for woman than for the men. That means working women tend to have more informal jobs than men. Therefore, we can calculate the informal working rate that rises at 15%.
+
+#### Formal job
+
+```{r echo=FALSE,  fig.align='center'}
+tapply(activeindividuals$contract_dummy,activeindividuals$sexo, summary)
+
+```
+
+Women tend slightly to have more informal jobs.
+
+#### Commuting time
+
+Newt we will compare commuting time between male and female. To do so, we firstly need to rearrange our data by cleaning and combining some variables. That starts by removing people who do not know their commuting time, then we convert the responses in total hours per week for commuting. We decided to create four categories depending on the commute duration : Short Commute (\<5h/week), Moderate Commute (between 5 and 10h/week), Long Commute (between 10 and 15h/week) and finally, Very Long Commute (\>15h/week). Commute time are resumed in the following graph. \newpage
+
+```{r , echo=FALSE, fig.align='center'}
+## Comparing commuting time
+
+# Cleaning and combining commuting variables
+activeindividuals <- activeindividuals %>%
+  # Replace invalid values (-8, -88) with NA
+  mutate(
+    o28a_hr = ifelse(o28a_hr >= 0, o28a_hr, NA),    # Hours per trip
+    o28a_min = ifelse(o28a_min >= 0, o28a_min, NA), # Minutes per trip
+    o28b = ifelse(o28b >= 1, o28b, NA)             # Trips per week
+  ) %>%
+  # Convert commute time to total minutes per trip (round trip adjustment)
+  mutate(
+    commute_time_per_trip = ((o28a_hr * 60) + o28a_min) * 2, # Total minutes per round trip, x2 because also counting way back home
+    total_commute_minutes_per_week = commute_time_per_trip * o28b, # Total weekly minutes
+    total_commute_hours_per_week = total_commute_minutes_per_week / 60 # Total weekly hours
+  ) %>%
+  # Classify commuting time
+  mutate(
+    commute_category = case_when(
+      total_commute_hours_per_week < 5 ~ "Short Commute",
+      total_commute_hours_per_week >= 5 & total_commute_hours_per_week < 10 ~ "Moderate Commute",
+      total_commute_hours_per_week >= 10 & total_commute_hours_per_week < 15 ~ "Long Commute",
+      total_commute_hours_per_week >= 15 ~ "Very Long Commute",
+      TRUE ~ "Unknown" 
+    )
+  )
+
+# Ensure commute_category and gender are appropriately categorized
+activeindividuals <- activeindividuals %>%
+  mutate(
+    sexo = factor(sexo, levels = c(1, 2), labels = c("Men", "Women")), 
+    commute_category = factor(
+      commute_category,
+      levels = c("Short Commute", "Moderate Commute", "Long Commute", "Very Long Commute", "Unknown")
+    ) 
+  )
+CrossTable(activeindividuals$commute_category, activeindividuals$sexo, prop.chisq = FALSE, prop.r = TRUE, prop.c = TRUE, prop.t = FALSE)
+#Comment -> Men are disproportionately represented in longer commuting categories, suggesting they are more likely to accept jobs requiring longer travel times, whereas women are more likely to fall into shorter commutes.
+
+```
+
+We observe that men are disproportionately represented in longer commuting categories, suggesting they are more likely to accept jobs requiring longer travel times, whereas women are more likely to fall into shorter commutes. Then, we propose to lean on the representation of women according to the branch of activity in which they work. For that, we compute the mean wage over the branches, we resume it in the following graph.
+
+#### Branch of activity
+
+Women tend to be less represented in branches with higher mean wages. We observe on that graph that the points are agglomerated in the left hand lower part. The regression line tells us that number of women decrease as the wage increase.
+
+```{r, echo=FALSE, fig.align='center'}
+# Scatterplot
+ggplot(branch_analysis, aes(x = overall_mean_wage, y = women_proportion)) +
+  geom_point(size = 3, color = "black") +
+  geom_smooth(method = "lm", se = FALSE, color = "red", linetype = "dashed") +
+  geom_text(
+    aes(label = branch1_label), 
+    vjust = -1, size = 3, color = "black", na.rm = TRUE
+  ) +
+  labs(
+    title = "Proportion of Women and Mean Wage by Branch",
+    x = "Overall Mean Wage (Branch)",
+    y = "Proportion of Women"
+  ) +
+  theme_minimal()
+```
+
+### Education Variables
+
+#### Literacy
+
+```{r echo=FALSE}
+
+activeindividuals <- activeindividuals %>%
+  mutate(
+    literacy_dummy = case_when(
+      e1 == 1 ~ 1,                  # Can read and write
+      e1 %in% c(2, 3, 4) ~ 0,       # Cannot read and write
+      TRUE ~ NA_real_               # Handle missing or unexpected values
+    )
+  )
+
+tapply(activeindividuals$literacy_dummy, activeindividuals$sexo, summary)
+```
+
+Women tend slightly to be more literate than men.
+
+#### Highest level of education attained
+
+```{r echo=FALSE}
+tapply(activeindividuals$e6a, activeindividuals$sexo, summary)
+```
+
+We can see that women have a slightly higher level of education attained then men. We used the variable `e6a`, that takes values from 1 to 15, the greater the value taken from the variable the highest level of education attained.
+
+```{r echo=FALSE}
+
+ggplot(education_gender_percentage, aes(x = e6a_numeric, color = sexo)) +
+  geom_density(aes(group = sexo), size = 1.2, adjust = 5) +  
+  scale_x_continuous(
+    breaks = 1:10,  # Numeric values for education levels
+    labels = c(
+      "No Formal Education", "Early Education", "Special Education", 
+      "Primary Education", "Secondary Education", "Vocational Education", 
+      "Higher Technician", "Professional Degree", "Master's Degree", "PhD"
+    )
+  ) +
+  labs(
+    title = "Density Plot of Education Levels by Gender (Lines)",
+    x = "Education Level",
+    y = "Density",
+    color = "Gender"
+  ) +
+  scale_color_manual(values = c("Men" = "blue", "Women" = "pink")) +  # Assign distinct colors
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "top"
+  )
+```
+
+The density plot highlights significant gender disparities in educational attainment. The density curve for men surpasses that of women at lower and middle education levels, while the women’s curve crosses and stays above the men’s at higher education levels, such as postgraduate studies. Men are more concentrated in lower education categories, including secondary and vocational education, whereas women are more represented at higher education levels, such as professional degrees and master’s degrees. This pattern indicates that women often achieve higher educational qualifications than men. However, despite their higher levels of education, women are still more likely to be concentrated in lower-paying fields, as observed in the scatterplot. Analyzing the gender distribution across different fields of education will provide further insight into this phenomenon.
+
+#### Education field
+
+While women surpass on average men in educational level attainment, they could be still underrepresented in STEM (science, technology, engineering, and math) fields, which tend to be higher-paying.
+
+Goldin notes that women are more likely to choose fields with lower financial returns but potentially greater time flexibility or social value.
+
+```{r echo=FALSE}
+ggplot(field_gender_percentage, aes(x = reorder(cinef13_area_label, cinef13_area), y = percentage, fill = sexo)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(
+    title = "Percentage of Gender by Field of Study and Education Level",
+    x = "Field of Study",
+    y = "Percentage",
+    fill = "Gender"
+  ) +
+  scale_fill_manual(values = c("Men" = "blue", "Women" = "pink")) +  # Set custom colors
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+#Comment -> Educational choice seems "gendered", low proportion of women in Engineering and more inclined to be in Health and Education 
+
+
+```
+
+The bar plot illustrates significant gender disparities in the choice of fields of study, which may contribute to the gender wage gap. Men dominate fields such as Engineering, Industry, and Construction, as well as IT, where they account for approximately 80% of the students. These fields are typically associated with higher-paying careers, which could partially explain income disparities between genders. Conversely, women are disproportionately represented in fields like Health and Well-being and Education, where their presence far surpasses that of men. While Natural Sciences, Mathematics, and Statistics exhibit a more balanced distribution between men and women, the overall pattern underscores how gendered educational choices align with labor market inequalities.
+
+These differences in educational choices are significant because they steer men and women into sectors with varying income opportunities, diminishing the impact of attaining on average higher education levels.
+
+#### Instability in educational paths
+
+```{r echo=FALSE}
+activeindividuals <- activeindividuals %>%
+  mutate(
+    e5a = ifelse(e5a >= 0, e5a, NA),
+    precarity_educ_dummy = case_when(
+      e5a %in% c(7, 8, 9, 10) ~ 0,   #other
+      e5a %in% c(1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 15) ~ 1,   #precarity reasons
+      TRUE ~ NA_real_
+    ))
+
+table(activeindividuals$precarity_educ_dummy)
+tapply(activeindividuals$precarity_educ_dummy, activeindividuals$sexo, summary)
+```
+
+Even though women tend to be more educated than men they seem on average more exposed to instability from external factors, susceptible to interrupt or ends their educational careers. We computed a dummy variable `precarity_educ_dummy` taking the value of 0 when the individual had to stop their educational path because of reasons as "Pregnancy, maternity or paternity" or "Help around the house or household chores" and the value of 1 if the individual is not studying in the present because he already finished studying or because he had the will to do so.
+
+### Health variables
+
+We decided to create a series of dummies concerning overall health characteristics and reflecting precarity and unequal access to health care for several reasons, in order to integrate them in our composite variable after.
+
+```{r echo=FALSE}
+tapply(activeindividuals$s26a, activeindividuals$sexo, summary)
+```
+
+Women had been through more hospital checks
+
+```{r echo=FALSE}
+tapply(activeindividuals$s22a, activeindividuals$sexo, summary)
+```
+
+Women had on average more mental checks in the past 12 months
+
+```{r echo=FALSE}
+tapply(activeindividuals$s21a, activeindividuals$sexo, summary)
+```
+
+Women had on average more emergency interventions in the past 12 months
+
+```{r echo=FALSE}
+table(activeindividuals$hospitalization_dummy)
+tapply(activeindividuals$hospitalization_dummy, activeindividuals$sexo, summary)
+```
+
+Women were on average more hospitalized in the last 12 months
+
+```{r echo=FALSE}
+tapply(activeindividuals$no_medical_care_dummy, activeindividuals$sexo, summary)
+```
+
+Among individuals who experienced illness in the last three months, men were less likely to seek medical consultation.
+
+```{r echo=FALSE}
+tapply(activeindividuals$problem_care_cost_dummy, activeindividuals$sexo, summary)
+```
+
+Women had less access to care aid because of costs
+
+The data highlights gender disparities in health outcomes and access to care. Women seem to face more barriers to healthcare, particularly in terms of affordability and accessibility, and seem more likely to seek medical attention when needed.
+
+```{r echo=FALSE}
+tapply(activeindividuals$permanent_health_condition, activeindividuals$sexo, summary)
+```
+
+On average, women are more affected by long-term health conditions.
+
+## Composite variable
+
+In the aim to analyse the gender wage gap through different aspects such as health, work and education where inequalities grow, we run a Principal Component Analysis. Firstly, we compute three composite variables which resume either, work or education or health.
+
+```{r include=FALSE}
+
+
+## Creation composite variables
+work_composite <- activeindividuals[, c(
+  "o10", 
+  "contract_dummy", 
+  "total_commute_hours_per_week",
+  "o31"
+)]
+
+health_composite <- activeindividuals[, c(
+  "disc_wg",
+  "problem_care_cost_dummy", 
+  "problem_get_to_hospital_dummy", 
+  "no_medical_care_dummy", 
+  "problem_appointment_dummy", 
+  "getting_to_hospital_dummy", 
+  "hospitalization_dummy", 
+  "s26a"
+)]
+
+education_composite <- activeindividuals[, c(
+  "educ", 
+  "e6a",
+  "literacy_dummy",
+  "precarity_educ_dummy"
+)]
+
+
+## Centrer et réduire les données
+work_composite_norm <- as.data.frame(scale(work_composite, center = TRUE, scale = TRUE))
+education_composite_norm <- as.data.frame(scale(education_composite, center = TRUE, scale = TRUE))
+health_composite_norm <- as.data.frame(scale(health_composite, center = TRUE, scale = TRUE))
+
+```
+
+```{r include=FALSE}
+## Use PCA 
+library(FactoMineR)
+library(factoextra)
+
+out.pca_health <- PCA(health_composite_norm, ncp = 6, graph = FALSE)
+get_eigenvalue(out.pca_health)
+
+out.pca_education <- PCA(education_composite_norm, ncp = 6, graph = FALSE)
+get_eigenvalue(out.pca_education)
+
+out.pca_work <- PCA(work_composite_norm, ncp = 6, graph = FALSE)
+get_eigenvalue(out.pca_work)
+
+```
+
+We run PCA for the three composite variables we created before and here are the results for each composite variables :
+
+```{r echo=FALSE, fig.align='center'}
+fviz_eig(out.pca_health, addlabels = TRUE, title = "PCA results for health" ) #we keep first six dimensions
+fviz_eig(out.pca_education, addlabels = TRUE, title = "PCA results for education") #we keep first six dimensions
+fviz_eig(out.pca_work, addlabels = TRUE, title = "PCA results for work") #we keep first six dimensions
+```
+
+To ensure the best choice of the dimensions, we apply the Kaiser method. Indeed, we select component with eigenvalue greater than 1. An eigenvalue greater than 1 means that the component explains the variance a better way than the original standardized component, therefore we keep only component whose the contribution explaining the variance is significant. Eigenvalues are summarized in the following charts.
+
+For health composite variable :
+
+```{r echo=FALSE}
+out.pca_health <- PCA(health_composite_norm, ncp = 6, graph = FALSE)
+get_eigenvalue(out.pca_health)
+```
+
+Following the Kaiser method, we select the dimensions 1 and 2, that both of them combined represent 41% of explained variance.
+
+For education composite variable :
+
+```{r echo=FALSE}
+out.pca_education <- PCA(education_composite_norm, ncp = 6, graph = FALSE)
+get_eigenvalue(out.pca_education)
+```
+
+We keep the dimension 1 that explains 37% of the variance.
+
+For the work composite variable :
+
+```{r echo=FALSE}
+out.pca_work <- PCA(work_composite_norm, ncp = 6, graph = FALSE)
+get_eigenvalue(out.pca_work)
+```
+
+In that case, we keep the dimensions 1 and 2 that explain 61% of the variance.
+
+Finally, we synthesize the results by calculating a linear combination of the projections of individuals onto the selected principal components, weighted by the percentage of variance explained by each component. That leads to a synthetic representation of the data, taking into account the relative importance of each principal component. We put the output of the operation in the original data set so that every individuals have their work, education or health composite value associated.
+
+```{r include=FALSE}
+
+
+#Synthetic variable
+x <- out.pca_health$ind$coord[, 1:2]
+#print(x)
+
+y <- out.pca_education$ind$coord[, 1:1]
+#print(y)
+
+z <- out.pca_work$ind$coord[, 1:2]
+#print(z)
+
+syn_var_x = (out.pca_health$eig[1,2]/100)*out.pca_health$ind$coord[,1] + (out.pca_health$eig[2,2]/100)*out.pca_health$ind$coord[,2] 
+#print(syn_var_x)
+
+syn_var_y = (out.pca_education$eig[1,2]/100)*out.pca_education$ind$coord[,1]
+#print(syn_var_y)
+
+syn_var_z = (out.pca_work$eig[1,2]/100)*out.pca_work$ind$coord[,1] + (out.pca_work$eig[2,2]/100)*out.pca_work$ind$coord[,2] 
+#print(syn_var_z)
+
+activeindividuals$work_composite <- syn_var_z
+activeindividuals$education_composite <- syn_var_y
+activeindividuals$health_composite <- syn_var_x
+
+```
+
+## Clustering methods
+
+To analyze the relationship between employment, education, health characteristics, gender, and income, we employed clustering methods to group individuals based on shared patterns in these attributes. We created a `clustering_data` database selecting relevant variables, including income (`log_income`), composite variables for education, work, and health, as well as age (`edad`) and gender (`sexo_dummy`). To ensure consistent analysis, we removed rows with missing values (`na.omit`) and standardized the data (`scale`) to eliminate the effects of differing variable scales.
+
+Using the k-means clustering algorithm, we determined the optimal number of clusters through the elbow method.
+
+As we saw in class, the elbow method is a graphical approach used to determine the optimal number of clusters in a data set. We plotted the within-cluster sum of squares (WSS) for each number of cluster. This measures how tightly data points fit within their assigned clusters, with lower values indicating better fit. The logic is that as the number of clusters increases, WSS decreases, but the rate of decrease slows down. The optimal number of clusters is typically at the "elbow point," where the decrease in WSS begins to level off, indicating diminishing returns from adding more clusters. In our case we chose to keep three clusters, as it balances the trade-off between capturing meaningful structure in the data and avoiding overfitting with too many clusters
+
+```{r echo=FALSE}
+activeindividuals$log_income <- log(activeindividuals$ytrabajocor + 0,5)
+#table(activeindividuals$log_income)
+
+activeindividuals <- activeindividuals %>%
+  mutate(
+    sexo_dummy = case_when(
+      sexo == "Men" ~ 0,                 
+      sexo == "Women" ~ 1,       
+      TRUE ~ NA_real_             
+    )
+  )
+
+clustering_data <- activeindividuals[, c("log_income", "education_composite", "work_composite", "health_composite", "edad", "sexo_dummy")]
+
+clustering_data <- na.omit(clustering_data)
+
+clustering_data <- as.data.frame(scale(clustering_data))
+
+#Elbow Method
+set.seed(123)
+
+elb_wss <- rep(0,times=10)
+for (k in 1:10) {
+  clus <- kmeans(clustering_data, centers = k)
+  elb_wss[k] <- clus$tot.
+}
+
+plot(1:10, elb_wss, type = "b", xlab = "Nb of clusters", ylab = "WSS")
+```
+
+We then applied k-means with three clusters (`nstart = 25`) and visualized the clusters using `fviz_cluster` to examine their distribution.
+
+```{r echo=FALSE}
+
+#We will keep 3 clusters
+set.seed(123)
+kmeans_result <- kmeans(clustering_data, centers = 3, nstart = 25)
+
+#Cluster Plot
+fviz_cluster(kmeans_result, data = clustering_data) +
+  labs(title = "K-means Clustering with 3 Clusters")
+
+```
+
+To evaluate the clustering quality, we calculated silhouette scores on a random sample of 10,000 data points, providing insight into how well-separated the clusters are.
+
+Finally, we computed summary statistics for each cluster to understand the key characteristics of the groups and their relationships with income, employment, education, health, and gender. This approach enables a detailed exploration of how these factors interact and cluster within the dataset.
+
+```{r echo=FALSE}
+#Cluster stats
+clustering_data$cluster <- kmeans_result$cluster
+cluster_summary_stats <- clustering_data %>%
+  group_by(cluster) %>%
+  summarize(across(everything(), mean, na.rm = TRUE))
+print(cluster_summary_stats)
+```
+
+We can distinguish from the table above three clusters defined by the wage of the individuals. The cluster 1 is composed by high revenue individuals and the opposite for the second one. The cluster 3 is an intermediate one. We observe that the high revenue cluster is in majority composed by healthy and educate men, with relative good emplyment conditions, but also probably working more hours and having longer commuting times.. As said before, men are more likely to accept distant jobs than women because they take less care of children and housework. in the other hand, the low income group is composed by women with a low education level and more exposed to health issues.
+
+## Tobit Model
+
+The Tobit model is well-suited for estimating the labor wage gap because it accounts for selection bias, which occurs when income is only observed for individuals who participate in the labor force. This means that the dataset is not random, there are individuals (those not working) for whom income is unobserved, and ignoring this could lead to biased estimates. The sample with unobserved income could not be even in characteristics, such as gender. Women could be more represented than men.
+
+#### Variables treatment
+
+For this model, we will use the `<sampleSelection>` package and begin by creating a `working` variable to distinguish employed individuals from those who are unemployed. 
+
+In Chile, the retirement age is 60 for women and 65 for men. To mitigate potential biases introduced by retirement, we decided to exclude individuals above 60 years of age. This decision is crucial since our income variable represents labor income, and retired individuals typically report zero labor income. Zero income observations linked to retirement may disproportionately affect women, who tend to live longer and are likely over represented in the retired population. Including these individuals could artificially exaggerate the gender-related selection bias in the model.
+
+#### The Model
+
+Our Tobit model is composed of two regression equations as follows:
+
+[Selection equation]{.underline}: The goal is to model the likelihood that an individual works (participates in the labor market) based on their characteristics. This accounts for the fact that not everyone participates in the labor market, which can lead to selection bias in estimating income determinants.
+
+$$
+( Selection) \ \text{working} = \beta_0 + \beta_1  \text{sexo_dummy} + \beta_2  \text{edad} + \beta_3  \text{educ}
+$$
+
+[Outcome equation]{.underline}: The purpose of this equation is to estimate the determinants of labor income while accounting for selection into the labor market, as captured by the selection equation. This approach helps to avoid bias that would arise from only observing income for individuals who are currently employed.
+
+$$
+(Outcome) \ \text{income} = \beta_0 + \beta_1  \text{sexo_dummy} + \beta_2  \text{education_composite} + \beta_3  \text{work_composite} + \beta_4  \text{health_composite}
+$$
+
+We incorporated the composite variables created earlier to control for various characteristics related to health conditions, job quality, and human capital. Additionally, we included branch activity to account for the observed trend that women tend to work in sectors with lower average wages. These controls enable the model to isolate the impact of gender on both labor force participation and income, which is essential for understanding the gender wage gap.
+
+#### Results
+
+```{r echo=FALSE}
+summary(tobit2_model)``
+```
+
+We observe 7113 censored observations for our dependent variable, representing approximately 9% of the total sample. This highlights the critical need to address selection bias in the analysis. The Tobit model addresses this issue by estimating the potential incomes of these censored individuals based on their characteristics.
+
+The model detects a negative correlation (rho = -0.6865) between the unobserved factors influencing labor force participation and income. This implies that unobserved factors that reduce the likelihood of labor force participation are associated with higher unobserved income levels among those who do participate. For example, people who are not participating may have higher potential incomes if they were to work but choose not to participate due to other constraints. By jointly modeling the selection process (labor force participation) and the outcome process (income), the Tobit model corrects for this bias (the outcome equation), allowing us to obtain more accurate and reliable estimates of the gender wage gap
+
+[**Selection:**]{.underline}
+
+##### Gender
+
+Our gender coefficient is statistically very significative (p \< 0.001). It's negative coefficient indicates that women (`sexo_dummy` = 1) are less likely to participate in the labor force than men, supporting the case of the existence of a selection bias.
+
+##### Age and Education
+
+Our age coefficient is also statistically significant and positive. A positive coefficient suggests that older individuals are more likely to participate in the labor force, though the effect size is relatively small. Our education coefficient is statistically significant (p \< 0.001). A positive coefficient indicates that higher levels of education are associated with a greater likelihood of labor force participation.
+
+[**Outcome:**]{.underline}
+
+The outcome equation in the Tobit model estimates the relationship between our income variable and the independent variables, similar to how a regular OLS regression does. It's worth noting that while the Tobit model adjusts for censored data, the interpretation of the coefficients in the outcome equation remains largely comparable to those in an OLS regression—representing the change in income associated with a one-unit change in the predictor, conditional on income being observed. Importantly, all the coefficients in our model are highly statistically significant at the 1% level, except for commuting time, which is significant at the 5% level. With this in mind, we will proceed to interpret each coefficient, understanding them as percentage changes since our dependent variable is in log form.
+
+##### Gender
+
+This indicates that women earn approximately 13.5% less than men on average, holding all other factors constant.
+
+##### Education
+
+This implies that for every one-unit increase in education (representing a higher level of attainment), income increases by approximately 8.94%, holding all other factors constant. This highlights the strong and positive impact of education on income.
+
+##### Health Characteristics
+
+Since higher values in the health composite represent worse health conditions, this coefficient means that a one-unit worsening in the health_composite is associated with a 3.02% reduction in income, holding all other factors equal. This illustrates how poorer health can act as a barrier to higher earnings.
+
+##### Contract Type
+
+Holding all other factors constant individuals with formal jobs earn approximately 18.93% more income than those without formal contracts, reflecting a very high impact of stable employment in income.
+
+##### Number of work hours per week
+
+This indicates that for every additional hour of work per week, income increases by approximately 0.8% holding everything else constant.
+
+##### Commute Hours
+
+The effect is quite modest, with each additional hour spent commuting per week associated with a 0.08% increase in income. While small, this positive relationship aligns with our earlier observations from our descriptive statistics part, suggesting that longer commutes may be linked to higher paying jobs, possibly as compensation for the high opportunity cost involved.
+
+##### Branch Activity
+
+While the specific branch categories are not directly interpretable (as it is a categorical variable), the positive coefficient indicates that the branch of activity plays a role in income differences, making it a valuable inclusion as a control variable.
+
+##### Area
+
+Living in rural areas is associated with 2.89% lower income. Individuals in rural areas might face unequal access to high paying jobs, concentrated in the cities. On the other hand, living costs in rural areas could also possibly be lower.
+
+##### Part time / Full time
+
+Individuals having a full time job or long working hours have an income increase by 11.88%, holding everything else constant, demonstrating the significant impact of better job conditions on earnings.
+
+### Oaxaca Blinder Decomposition
+
+After estimating the Tobit model to account for selection bias in labor market participation and determining the determinants of labor income, we decided to perform an Oaxaca-Blinder decomposition. The Oaxaca-Blinder decomposition is a method used to break down differences in mean outcomes (labor income) across groups (men and women) into two main components:
+
+[Explained Component (Endowments]{.underline}): This portion measures how much of the difference in outcomes can be attributed to group differences in explanatory variables (education, job quality).
+
+[Unexplained Component (Coefficients]{.underline}): This measures the part of the difference that cannot be explained by observable characteristics, often associated with differential returns to those characteristics. The unexplained component is sometimes interpreted as discrimination or the effect of unmeasured variables.
+
+This decomposition is particularly useful for analyzing how much of the gender wage gap is due to disparities in characteristics (education, employment conditions) versus disparities in treatment (pay inequality for the same level of education).
+
+For this we will use the <oaxaca> library. We first prepared the data set `oaxaca_data` by selecting the relevant variables: labor market participation (`working`), branch of activity (`rama1`), our composite variables for health, work, and education characteristics, gender (`sexo_dummy`), labor income (`yoprcor`), age (`edad`), and educational attainment (`e6a`).
+
+Next, we checked for missing values in the data set. There are indeed NA values for our income dependent variable (`yoprocr`), for the branch of activity variable (`rama1`), and for our variables standing for formal informal job and for the variable accounting for Part Time or Full Time (`o20`). Recognizing the potential for bias if these rows were excluded, specific imputations were applied. For missing values in our income variable, zeros were assigned, reflecting individuals with no labor income rather than attempting to predict their income levels.
+
+For other variables with missing data, predictive mean matching (PMM) was employed using the mice package. This method imputes missing values by predicting plausible values based on observed data while preserving the original variable's distribution.
+
+```{r echo=FALSE}
+OB$y
+```
+
+The y component of the resulting "oaxaca"-class object indicates that the mean real wage is \$629469.9 for men (Group A) and \$494830.2 for women, leaving the difference of approximately 27.22% be explained by the Blinder-Oaxaca decomposition.
+
+[**Endowments**]{.underline}
+
+We shall first clarify how we will interpret the plot printing our results.
+
+[Positive bars]{.underline}: Indicate that the difference in the endowment (characteristic) between men and women contributes to **increasing** the wage gap. For example, if men have better job-related characteristics (more hours worked, better job quality), this contributes positively to the wage gap.
+
+[Negative bars]{.underline}: Indicate that the difference in the endowment **reduces** the wage gap. For instance, if women have a higher level of education than men on average, and this characteristic favors them, it will appear as a negative bar because it narrows the wage gap.
+
+##### Part Time / Full time (Green bar):
+
+Regarding endowments this appears to be the most significant factor contributing to differences in wage gap between gender. The positive contribution of the `o20` bar in the indicates that differences in the distribution of part-time and full-time employment between men and women contribute to the observed income gap. Specifically, men are more likely to occupy full-time roles, while women are more represented in part-time positions. Full-time employment naturally leads to higher overall earnings, so this difference in endowments (distribution of full-time vs. part-time work) worsens the wage gap in favor of men.
+
+##### Education (Pink):
+
+In contrast, education contributes reducing the wage gap. As we previously saw, women tend to be more educated than men.
+
+##### Branch of activity (Light blue):
+
+Even though the effect is quite small, `rama1` has a negative endowment coefficient, indicating that women’s distribution across branches of activity narrows the wage gap. At first it could seem a little bit counter intuitive, notably having in mind our figure "x", showing that women tend to work in branches with lower mean wages. However, this does not necessarily mean that women work in higher-paying branches on average. Instead, it means that the branches where women are concentrated (such as well being or education) have a smaller impact on the wage gap than expected given the overall wage differences across branches. In other words, in those branches there might have less variability in wages between genders, with tighter wage distributions. Women tend to work in branches with lower mean wages, but the wage gap within those branches may be smaller than the wage gap within higher-paying branches where men are concentrated.
+
+Considering specifically education and health sectors, both branches with a high proportion of women, we could make the case of two reasons that could make this sectors relatively low in wage variability. Both could be branches with a high degree of union representation, compared to IT for example, which reduce overall wage variation. Also in branches with low mean wages, such as household work, where women represent more than 90% of the workers, wages could tend to cluster tightly at a low level, as it might be a sector with limited upward mobility or pay progression.
+
+```{r echo=FALSE}
+plot(OB1, components = c("endowments","coefficients"))
+```
+
+[**Coefficients**]{.underline}
+
+This panel highlights differences in returns to characteristics, in other words how men and women are rewarded for their endowments:
+
+##### Working status (Light blue)
+
+The large positive bar shows that men receive disproportionately higher returns for participating in the labor market. This indicates that the same working status yields much higher wages for men than for women.
+
+##### Part Time / Full time (Green bar):
+
+The positive bar indicates that differences in the returns to work characteristics (such as hours worked, contract quality, or social security affiliation) contribute to the unexplained gender wage gap. In other words, women might receive lower returns for the same level of job quality or work effort compared to men, highlighting an inequity in how these attributes are valued.
+
+##### Age (Purple bar):
+
+The positive contribution shows that men earn higher returns as they age, compared to women, which widens the gap. In other words, aging is more rewarded for men than it is for women. This is very in line with Claudia Goldin works, and what she and other researchers discuss as the "motherhood penalty" and the "fatherhood premium". The motherhood penalty refers to the wage and career disadvantages that women often experience after becoming mothers. Indeed women are more likely to take career breaks or shift to part-time work after having children to balance caregiving responsibilities.
+
+##### Education (Pink bar)
+
+The negative bar in the coefficients panel for education indicates that women receive lower returns for the same level of education compared to men. In other words, even when women have similar or higher levels of education, they are less rewarded for this attribute in terms of income. This could be in line with aspects we saw before, as occupational segregation. Despite their higher educational qualifications, women tend to be concentrated in lower-paying fields compared to men. In other words, we could make the case for women achieving high levels of education for fields that are less rewarded by the market.
+
+##### The unexplained part of the gap
+
+```{r echo=FALSE}
+OB1$twofold$overall
+```
+
+We will refer to the paper "oaxaca: Blinder-Oaxaca Decomposition in R" from Marek Hlavac. In line with Neumark’s methodology, the twofold decomposition was performed by selecting the pooled regression coefficients (from a regression that excludes the group indicator variable, in our case gender) as the reference coefficient set. This approach, denoted by a group weight of -1, allows for the comparison of both explained (endowments) and unexplained (coefficients) contributions to the wage gap under the assumption that the pooled regression represents a non-discriminatory wage structure.
+
+Explained Component: **\$**9296.574. The positive value suggests that differences in observable characteristics slightly favor men, but contributing to a small portion of the wage gap.
+
+Unexplained Component: \$125343.1. The much larger positive unexplained component highlights that the majority of the wage gap stems from differences in returns to those characteristics or unobserved factors.
+
+Observable characteristics contribute only marginally to the wage gap. Most of the wage gap arises from differences in how men and women are rewarded for their characteristics, emphasizing the role of systemic factors or potential discrimination.
+
+In the "oaxaca: Blinder-Oaxaca Decomposition in R", Marek Hlavac discusses how splitting the unexplained component (roughly corresponding to our coefficient panel) into parts "in favor of one group" and "against the other" provides additional insight into how wage disparities are distributed across groups. This split helps to pinpoint which variables are disproportionately contributing to the wage gap through differential treatment of characteristics between men and women.
+
+```{r echo=FALSE}
+plot(OB1, 
+     decomposition = "twofold", 
+     group.weight = -1,  # Adjust this to the desired group weight
+     unexplained.split = TRUE, 
+     components = c("unexplained A", "unexplained B"), 
+     component.labels = c("unexplained A" = "In Favor of Men", 
+                          "unexplained B" = "Against Women"),
+     variables = c("edad", "e6a", "working"), 
+     variable.labels = c("edad" = "Years of Age", 
+                         "e6a" = "Education Level Attained", 
+                         "working" = "Working Status"))
+```
+
+So as the first plot provided the overall contributions of endowments and coefficients (explained and unexplained components) to the wage gap, this plot goes a step further by splitting the unexplained component into “In Favor of Men” and “Against Women.” We only kept the variables that were the most significantly contributing to the wage gap.
+
+Two things seems worth to highlight:
+
+We can observe that the "Education Level Attained" variable has the largest unexplained contributions both in favor of men and against women, reinforcing the idea that differences in returns to education are a key driver of the gender wage gap.
+
+Coming back to the concepts of motherhood penalty and fatherhood premium, we can see that "Years of Age" bar is slightly more important in the "Against Women" panel than in the "Favor Men" panel. This could suggest that as women age , their income suffers disproportionately compared to men. This could be due to facing more career interruptions or reduced hours due to care giving responsibilities.
+
+# Conclusion and discussion
+
+This study aimed to provide a more comprehensive understanding of the gender wage gap in Chile. An initial analysis revealed a wage gap of approximately 20% in favor of men. The descriptive analysis served as a good starting point, highlighting significant differences in employment, education, and health characteristics between men and women. Several well-established factors contributing to the gender wage gap were identified, including occupational segregation and the impact of non-linear pay structures. Notably, men were found to work longer hours, engage in more overtime, and occupy more often full-time positions or roles with extended working-hour contracts, which collectively contribute to the observed wage disparity.
+
+To deepen into these disparities, we created composite variables and applied clustering methods to group individuals based on shared characteristics, uncovering distinct patterns in the data. These patterns revealed clear gendered divisions in the labor market, such as men’s over representation in higher-paying sectors. 
+
+The Tobit model further illuminated the determinants of income, accounting for censored data from individuals without observed labor income and correcting for selection bias. By controlling for factors such as education, branch of activity or hours worked, we observed a reduction in the wage gap, yet it remained significant and large at approximately 13.5%.
+
+The Oaxaca decomposition provided additional insights by breaking down the wage gap into components attributable to observable characteristics and those linked to unobserved factors, such as potential discrimination. This analysis highlighted that a considerable portion of the gap remains unexplained, not due to differences in endowments, but rather to how the endowments are rewarded in the labor market. These findings highlight the existence of implicit biases and structural inequities that perpetuate gender wage disparities.
+
+Our work has significant room for improvement. Perhaps the most notable limitation is that we did not account for motherhood. Although we touched on the concept of the motherhood penalty, we did not specifically control for maternity or examine how having children affects women and men differently. Furthermore, analyzing the income differences between mothers and non-mothers would undoubtedly provide valuable insights.
+
+# Appendix: R Code
+
+```{r, eval=FALSE, echo=FALSE, results="asis", comment=NA}
+################ Estimation of the gender wage gap in Chile (2022) ######################
+
+library(haven)
+library(dplyr)
+library(summarytools)
+library(ggplot2)
+library(stargazer)
+library(gmodels)
+library(stargazer)
+library(mice)
+
+
+#Load data set
+CASEN_2022 <- read_dta("~/Downloads/CASEN 2022.dta")
+View(CASEN_2022)
+
+
+### ========== Question 1: Create a sample of active individuals according to ILO) =========== ###
+
+
+# Convert labelled variables to numeric
+sapply(CASEN_2022[, c("o1", "o3", "o5", "o6")], class)
+
+CASEN_2022 <- CASEN_2022 %>%
+  mutate(
+    o1 = as.integer(o1),
+    o3 = as.integer(o3),
+    o5 = as.integer(o5),
+    o6 = as.integer(o6),
+    edad = as.integer(edad)
+  )
+
+# Create active sample
+activeindividuals <- CASEN_2022 %>%
+  filter(
+    (o1 == 1 | o3 == 1) |          # Employed conditions
+      (o1 == 2 & o5 == 1 & o6 == 1) # Unemployed conditions
+  ) %>%
+  filter(edad >= 15) # Exclude individuals under 15 years old
+
+table(activeindividuals$sexo)
+
+
+
+### =========== Question 2 and 3: Descriptive statistics between genders ============ ###
+
+
+#### Employment Variables
+
+
+## Comparing labor income
+
+descriptive_stats_wage <- activeindividuals %>%
+  group_by(sexo) %>%
+  summarise(
+    mean_income = mean(yoprcor, na.rm = TRUE),
+    median_income = median(yoprcor, na.rm = TRUE),
+    min_wage = min(yoprcor, na.rm = TRUE),
+    max_wage = max(yoprcor, na.rm = TRUE),
+    count = n()
+  )
+    
+print(descriptive_stats_wage)
+#Comment -> Males have on average a higher wage
+
+
+## Comparing Hourly Wage
+activeindividuals <- activeindividuals %>%
+  mutate(hourly_wage = ifelse(y1 >= 0 & y2_hrs > 0, y1 / y2_hrs, 0))  # Set hourly_wage to 0 if y2_hrs = 0
+
+descriptive_stats_hourly_wage <- activeindividuals %>%
+  group_by(sexo) %>%
+  summarise(
+    mean_hourly_wage = mean(hourly_wage, na.rm = TRUE),
+    median_hourly_wage = median(hourly_wage, na.rm = TRUE),
+    min_hourly_wage = min(hourly_wage, na.rm = TRUE),
+    max_hourly_wage = max(hourly_wage, na.rm = TRUE),
+    count = n()
+  )
+
+print(descriptive_stats_hourly_wage)
+#Comment -> Males have on average a higher hourly wage
+
+
+## Comparing part time or full time
+activeindividuals <- activeindividuals %>%
+  mutate(
+    o20 = ifelse(o20 >= 0 & o20 <= 3, o20, NA),
+    o20 = case_when(
+          o20 == 1 ~ 2,    # Change 3 to take the meaning of 1
+          o20 == 2 ~ 1,    # Keep 2 as it is
+          o20 == 3 ~ 3,    # Change 1 to take the meaning of 3
+          TRUE ~ NA_real_  # Set unexpected values to NA
+        )
+      )
+    
+tapply(activeindividuals$o20, activeindividuals$sexo, summary)
+
+descriptive_stats_time_contract <- activeindividuals %>%
+  group_by(o20, sexo) %>%
+  summarise(
+    count = n(),  # Count observations for each gender and `o20` value
+    .groups = "drop"
+  ) %>%
+  group_by(o20) %>%
+  mutate(
+    proportion = count / sum(count) * 100  # Calculate proportion for each gender
+  )
+
+print(descriptive_stats_time_contract)
+#Comment -> Women represent 2/3 of the part time workers, and 73,1% of workers doing long working hours are men. Men are also more represented among full time workers.
+
+
+## Comparing Overtime
+activeindividuals <- activeindividuals %>%
+  mutate(
+    overtime = case_when(
+      y3a_preg == 1 ~ 1,  
+      y3a_preg == 2 ~ 0,  
+      TRUE ~ NA_real_     
+    )
+  )
+
+descriptive_stats_overtime <- activeindividuals %>%
+  group_by(sexo) %>%
+  summarise(
+    total = n(),
+    overtime_yes = sum(overtime == 1, na.rm = TRUE),
+    overtime_no = sum(overtime == 0, na.rm = TRUE),
+    proportion_overtime = mean(overtime, na.rm = TRUE)  
+  )
+
+print(descriptive_stats_overtime)
+#Comment -> Men tend to do more overtime
+
+activeindividuals <- activeindividuals %>%
+  mutate(y3a = ifelse(y3a >= 0, y3a, NA))
+tapply(activeindividuals$y3a, activeindividuals$sexo, summary)
+#Comment -> Men on average earn more from overtime work
+
+
+## Comparing number of hours worked
+activeindividuals <- activeindividuals %>%
+  mutate(o10 = ifelse(o10 >= 0, o10, NA))
+
+descriptive_stats_hours <- activeindividuals %>%
+  group_by(sexo) %>%
+  summarise(
+    mean_hours = mean(o10, na.rm = TRUE),
+    median_hours = median(o10, na.rm = TRUE),
+    sd_hours = sd(o10, na.rm = TRUE),
+    min_hours = min(o10, na.rm = TRUE),
+    max_hours = max(o10, na.rm = TRUE),
+    n = n()
+  )
+
+print(descriptive_stats_hours)
+#Comment -> Men tend to work more hours than women 
+
+
+## Comparing contract
+activeindividuals <- activeindividuals %>%
+  mutate(
+    o19 = ifelse(o19 >= 0, o19, NA),
+    contract_dummy = case_when(
+      o19 %in% c(2, 3) ~ 0,
+      o19 == 1 ~ 1,
+      TRUE ~ NA_real_
+    )
+  )
+
+table(activeindividuals$contract_dummy)
+tapply(activeindividuals$contract_dummy,activeindividuals$sexo, summary)
+#Comment -> Women tend slightly to have more informal jobs
+
+
+## Comparing commuting time
+
+# Cleaning and combining commuting variables
+activeindividuals <- activeindividuals %>%
+  # Replace invalid values (-8, -88) with NA
+  mutate(
+    o28a_hr = ifelse(o28a_hr >= 0, o28a_hr, NA),    # Hours per trip
+    o28a_min = ifelse(o28a_min >= 0, o28a_min, NA), # Minutes per trip
+    o28b = ifelse(o28b >= 1, o28b, NA)             # Trips per week
+  ) %>%
+  # Convert commute time to total minutes per trip (round trip adjustment)
+  mutate(
+    commute_time_per_trip = ((o28a_hr * 60) + o28a_min) * 2, # Total minutes per round trip, x2 because also counting way back home
+    total_commute_minutes_per_week = commute_time_per_trip * o28b, # Total weekly minutes
+    total_commute_hours_per_week = total_commute_minutes_per_week / 60 # Total weekly hours
+  ) %>%
+  # Classify commuting time
+  mutate(
+    commute_category = case_when(
+      total_commute_hours_per_week < 5 ~ "Short Commute",
+      total_commute_hours_per_week >= 5 & total_commute_hours_per_week < 10 ~ "Moderate Commute",
+      total_commute_hours_per_week >= 10 & total_commute_hours_per_week < 15 ~ "Long Commute",
+      total_commute_hours_per_week >= 15 ~ "Very Long Commute",
+      TRUE ~ "Unknown" 
+    )
+  )
+
+# Ensure commute_category and gender are appropriately categorized
+activeindividuals <- activeindividuals %>%
+  mutate(
+    sexo = factor(sexo, levels = c(1, 2), labels = c("Men", "Women")), 
+    commute_category = factor(
+      commute_category,
+      levels = c("Short Commute", "Moderate Commute", "Long Commute", "Very Long Commute", "Unknown")
+    ) 
+  )
+
+# Crosstab Gender Commuting Time
+CrossTable(activeindividuals$commute_category, activeindividuals$sexo, prop.chisq = FALSE, prop.r = TRUE, prop.c = TRUE, prop.t = FALSE)
+#Comment -> Men are disproportionately represented in longer commuting categories, suggesting they are more likely to accept jobs requiring longer travel times, whereas women are more likely to fall into shorter commutes.
+
+
+## Computing mean wage per branch of activity
+activeindividuals <- activeindividuals %>%
+  mutate(rama1 = ifelse(rama1 >= 0, rama1, NA))
+
+mean_wage_per_branch <- activeindividuals %>%
+  group_by(rama1, sexo) %>%  # Group by branch and gender
+  summarise(
+    mean_wage = mean(yoprcor, na.rm = TRUE),  # Calculate mean wage
+    count = n(),                          # Count individuals in each group
+    .groups = "drop"
+  )
+
+print(mean_wage_per_branch, n=50)
+
+# Compute overall mean wage and proportion of women per branch
+branch_analysis <- activeindividuals %>%
+  group_by(rama1) %>%
+  summarise(
+    overall_mean_wage = mean(yoprcor, na.rm = TRUE),           # Mean wage per branch
+    total_count = n(),                                        # Total individuals per branch
+    women_count = sum(sexo == "Women", na.rm = TRUE),         # Number of women in each branch
+    women_proportion = women_count / total_count              # Proportion of women
+  ) %>%
+  ungroup() %>%  # Remove grouping to ensure rama1 is accessible
+  mutate(
+    branch1_label = case_when(
+      rama1 == 2 ~ "Mining",
+      rama1 == 7 ~ "Wholesale and retail trade",
+      rama1 == 9 ~ "Food service",
+      rama1 == 16 ~ "Teaching",
+      rama1 == 20 ~ "Households activities",
+      rama1 == 21  ~ "Extraterritorial bodies",
+      TRUE ~ NA_character_  # Leave other branches unlabeled
+    )
+  )
+
+print(branch_analysis, n=50)
+
+
+# Scatterplot
+ggplot(branch_analysis, aes(x = overall_mean_wage, y = women_proportion)) +
+  geom_point(size = 3, color = "black") +
+  geom_smooth(method = "lm", se = FALSE, color = "red", linetype = "dashed") +
+  geom_text(
+    aes(label = branch1_label), 
+    vjust = -1, size = 3, color = "black", na.rm = TRUE
+  ) +
+  labs(
+    title = "Proportion of Women and Mean Wage by Branch",
+    x = "Overall Mean Wage (Branch)",
+    y = "Proportion of Women"
+  ) +
+  theme_minimal()
+# Comment -> Women tend to be less represented in branches with higher mean wages
+
+
+## Social security affiliation
+activeindividuals <- activeindividuals %>%
+  mutate(
+    o31 = ifelse(o31 >= 0, o31, NA))
+
+table(activeindividuals$o31)
+tapply(activeindividuals$o31, activeindividuals$sexo, summary)
+#Comment -> Women are slightly more affiliated to social security
+
+
+#### Education Variables
+
+
+## Comparing literacy 
+activeindividuals <- activeindividuals %>%
+  mutate(
+    literacy_dummy = case_when(
+      e1 == 1 ~ 1,                  # Can read and write
+      e1 %in% c(2, 3, 4) ~ 0,       # Cannot read and write
+      TRUE ~ NA_real_               # Handle missing or unexpected values
+    )
+  )
+
+tapply(activeindividuals$literacy_dummy, activeindividuals$sexo, summary)
+#Comment -> Women on average are more literate
+
+
+## Comparison of level of education attained
+
+# Descriptive statistics for education by gender
+descriptive_stats_education <- activeindividuals %>%
+  group_by(sexo) %>%
+  summarise(
+    mean_education = mean(e6a, na.rm = TRUE),
+    median_education = median(e6a, na.rm = TRUE),
+    n = n()
+  )
+
+print(descriptive_stats_education)
+# Comment -> Women tend to be more educated
+
+# Recode `e6a` into meaningful categories
+education_gender_percentage <- activeindividuals %>%
+  mutate(
+    e6a_recode = case_when(
+      e6a == 1 ~ "No Formal Education",                # Never attended
+      e6a %in% c(2, 3, 4) ~ "Early Education",         # Nursery, Kindergarten, Pre-Kindergarten
+      e6a == 5 ~ "Special Education",                 # Special Education
+      e6a %in% c(6, 7) ~ "Primary Education",         # Primary or Basic Education
+      e6a %in% c(8, 9) ~ "Secondary Education",       # Humanities, Scientific Secondary Education
+      e6a %in% c(10, 11) ~ "Vocational Education",    # Technical or Vocational Education
+      e6a == 12 ~ "Higher Technician",               # Higher Level Technician
+      e6a == 13 ~ "Professional Degree",             # Professional Careers (4+ years)
+      e6a == 14 ~ "Master's Degree",                 # Master's Degree
+      e6a == 15 ~ "PhD",                             # PhD
+      TRUE ~ NA_character_                           # Handle unexpected or missing values
+    )
+  ) 
+
+education_gender_percentage <- (activeindividuals$e6a)
+
+# Re-create the dataset from activeindividuals
+education_gender_percentage <- activeindividuals %>%
+  group_by(e6a, sexo) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  group_by(e6a) %>%
+  mutate(percentage = (count / sum(count)) * 100)
+
+
+# Check the distribution
+print(education_gender_percentage, n=25)
+
+# Ensure `e6a` exists and is numeric for recoding
+education_gender_percentage <- activeindividuals %>%
+  mutate(
+    e6a_numeric = case_when(
+      e6a == 1 ~ 1,    # No Formal Education
+      e6a %in% c(2, 3, 4) ~ 2,    # Early Education
+      e6a == 5 ~ 3,    # Special Education
+      e6a %in% c(6, 7) ~ 4,    # Primary Education
+      e6a %in% c(8, 9) ~ 5,    # Secondary Education
+      e6a %in% c(10, 11) ~ 6,    # Vocational Education
+      e6a == 12 ~ 7,    # Higher Technician
+      e6a == 13 ~ 8,    # Professional Degree
+      e6a == 14 ~ 9,    # Master's Degree
+      e6a == 15 ~ 10,   # PhD
+      TRUE ~ NA_real_   # Handle unexpected or missing values
+    )
+  )
+
+# Density plot
+ggplot(education_gender_percentage, aes(x = e6a_numeric, color = sexo)) +
+  geom_density(aes(group = sexo), size = 1.2, adjust = 5) +  
+  scale_x_continuous(
+    breaks = 1:10,  # Numeric values for education levels
+    labels = c(
+      "No Formal Education", "Early Education", "Special Education", 
+      "Primary Education", "Secondary Education", "Vocational Education", 
+      "Higher Technician", "Professional Degree", "Master's Degree", "PhD"
+    )
+  ) +
+  labs(
+    title = "Density Plot of Education Levels by Gender (Lines)",
+    x = "Education Level",
+    y = "Density",
+    color = "Gender"
+  ) +
+  scale_color_manual(values = c("Men" = "blue", "Women" = "pink")) +  # Assign distinct colors
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    legend.position = "top"
+  )
+#Comment -> Women are underrepresented compared to men in lower education levels, and same or overrepresented for higher education levels
+
+
+## Comparing field of education
+
+field_gender_percentage <- activeindividuals %>%
+  group_by(cinef13_area, sexo) %>%
+  summarise(count = n(), .groups = "drop") %>%
+  group_by(cinef13_area) %>%
+  mutate(percentage = (count / sum(count)) * 100)
+
+field_gender_percentage <- field_gender_percentage %>%
+  mutate(cinef13_area = ifelse(cinef13_area <= 10, cinef13_area, NA)) 
+
+field_gender_percentage <- field_gender_percentage %>%
+  mutate(
+    cinef13_area_label = case_when(
+      cinef13_area == 1 ~ "Health and Wellbeing",
+      cinef13_area == 2 ~ "Engineering, Industry and Construction",
+      cinef13_area == 3 ~ "Education",
+      cinef13_area == 4 ~ "Services",
+      cinef13_area == 5 ~ "Business Administration and Law",
+      cinef13_area == 6 ~ "Social Sciences, Journalism and Information",
+      cinef13_area == 7 ~ "Natural Sciences, Mathematics and Statistics",
+      cinef13_area == 8 ~ "Agriculture, Forestry, Fisheries and Veterinary Medicine",
+      cinef13_area == 9 ~ "Information and Communication Technology (ICT)",
+      cinef13_area == 10 ~ "Arts and Humanities",
+      TRUE ~ NA_character_
+    )
+  )
+
+field_gender_percentage <- field_gender_percentage %>%
+  filter(!is.na(cinef13_area)) #remove NA
+
+field_gender_percentage <- field_gender_percentage %>%
+  mutate(
+    cinef13_area_label = factor(
+      cinef13_area,
+      levels = c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10),
+      labels = c("Health and Wellbeing", "Engineering, Industry and Construction", "Education", "Services", "Business and Law", "Social Science and Journalism", "Natural Science, Maths and Stats", "Agriculture", "IT", "Arts and Humanities")
+    ),
+    sexo = factor(sexo) 
+  )
+
+# Plot with cinef13_area included
+ggplot(field_gender_percentage, aes(x = reorder(cinef13_area_label, cinef13_area), y = percentage, fill = sexo)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(
+    title = "Percentage of Gender by Field of Study and Education Level",
+    x = "Field of Study",
+    y = "Percentage",
+    fill = "Gender"
+  ) +
+  scale_fill_manual(values = c("Men" = "blue", "Women" = "pink")) +  # Set custom colors
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+#Comment -> Very low proportion of women in Engineering and IT branches, more inclined to be in Health and Education.
+
+
+## Had to interrupt studies because of external reasons
+activeindividuals <- activeindividuals %>%
+  mutate(
+    e5a = ifelse(e5a >= 0, e5a, NA),
+    precarity_educ_dummy = case_when(
+      e5a %in% c(7, 8, 9, 10) ~ 1,   # No
+      e5a %in% c(1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 15) ~ 0,   # Yes
+      TRUE ~ NA_real_
+    ))
+
+descriptive_stats_education <- activeindividuals %>%
+  group_by(sexo) %>%
+  summarise(
+    mean_education = mean(e6a, na.rm = TRUE),
+    median_education = median(e6a, na.rm = TRUE),
+    n = n()
+  )
+
+table(activeindividuals$precarity_educ_dummy)
+tapply(activeindividuals$precarity_educ_dummy, activeindividuals$sexo, summary)
+# Comment -> Women were more incline to interrupt their studies because of external reasons
+
+
+### Health 
+
+## Disabilities
+activeindividuals <- activeindividuals %>%
+  mutate(disc_wg = ifelse(disc_wg >= 0, disc_wg, NA))
+table(activeindividuals$disc_wg)
+tapply(activeindividuals$disc_wg, activeindividuals$sexo, summary)
+
+
+## Number medical checks last 12 months
+activeindividuals <- activeindividuals %>%
+  mutate(s26a = ifelse(s26a >= 0, s26a, NA))
+         
+tapply(activeindividuals$s26a, activeindividuals$sexo, summary)
+# Comment -> Women had been through more hospital checks
+
+
+## Number of mental checks
+activeindividuals <- activeindividuals %>%
+  mutate(
+    s22a = ifelse(s22a >= 0, s22a, NA))
+
+table(activeindividuals$s22a)
+tapply(activeindividuals$s22a, activeindividuals$sexo, summary)
+#Comment -> Women had on average more mental checks in the past 12 months
+
+
+## Number of emergency interventions
+activeindividuals <- activeindividuals %>%
+  mutate(
+    s21a = ifelse(s21a >= 0, s21a, NA))
+table(activeindividuals$s21a)
+tapply(activeindividuals$s21a, activeindividuals$sexo, summary)
+#Comment -> Women had on average more emergency interventions in the past 12 months
+
+
+## Has been hospitalized last 12 months
+activeindividuals <- activeindividuals %>%
+  mutate(
+    s27a = ifelse(s27a >= 0, s27a, NA),
+    hospitalization_dummy = case_when(
+    s27a == 9 ~ 0,   #No
+    s27a %in% c(1, 2, 3, 4, 5, 6, 7, 8) ~ 1,   #Yes
+    TRUE ~ NA_real_
+    ))
+
+table(activeindividuals$hospitalization_dummy)
+tapply(activeindividuals$hospitalization_dummy, activeindividuals$sexo, summary)
+#Comment -> Women were on average more hospitalized in the last 12 months
+
+
+## Did not have consultation for his illness / accident
+activeindividuals <- activeindividuals %>%
+  mutate(
+    s17 = ifelse(s17 >= 0, s17, NA),  
+    no_medical_care_dummy = case_when(
+      s17 == 2 ~ 0,     #No         
+      s17 == 1 ~ 1,      #Yes           
+      TRUE ~ NA_real_                
+    )
+  )
+
+tapply(activeindividuals$no_medical_care_dummy, activeindividuals$sexo, summary)
+#Comment -> Men tend to have less consultations
+
+
+## Because of problems getting to surgery or hospital
+activeindividuals <- activeindividuals %>%
+  mutate(
+    ifelse(s19a >= 0, s19a, NA),
+    getting_to_hospital_dummy = case_when(
+      s19a == 2 ~ 0,                  # No
+      s19a == 1 ~ 1,       # Yes
+      TRUE ~ NA_real_             
+    )
+  )
+
+table(activeindividuals$getting_to_hospital_dummy)
+tapply(activeindividuals$getting_to_hospital_dummy, activeindividuals$sexo, summary)
+
+
+## Problems getting an appointment/attention
+activeindividuals <- activeindividuals %>%
+  mutate(
+    ifelse(s19b >= 0, s19b, NA),
+    problem_appointment_dummy = case_when(
+      s19b == 2 ~ 0,                  # No
+      s19b == 1 ~ 1,       # Yes
+      TRUE ~ NA_real_             
+    )
+  )
+
+tapply(activeindividuals$problem_appointment_dummy, activeindividuals$sexo, summary)
+#Comment -> Women suffered more of issues getting an appointment
+
+
+## Problems being attended to in the establishment
+activeindividuals <- activeindividuals %>%
+  mutate(
+    ifelse(s19c >= 0, s19c, NA),
+    problem_get_to_hospital_dummy = case_when(
+      s19c == 2 ~ 0,                  # No
+      s19c == 1 ~ 1,       # Yes
+      TRUE ~ NA_real_             
+    )
+  )
+
+tapply(activeindividuals$problem_get_to_hospital_dummy, activeindividuals$sexo, summary)
+
+
+## Problems due to cost for care due to cost
+activeindividuals <- activeindividuals %>%
+  mutate(
+    s19d = ifelse(s19d >= 0, s19d, NA),  # Ensure valid values for s19d
+    s19e = ifelse(s19e >= 0, s19e, NA),  # Ensure valid values for s19e
+    problem_care_cost_dummy = case_when(
+      s19d == 2 & s19e == 2 ~ 0,         # No problem with care cost
+      s19d == 1 | s19e == 1 ~ 1,         # Problem with care cost
+      TRUE ~ NA_real_                    # Handle missing or unexpected values
+    )
+  )
+
+table(activeindividuals$problem_care_cost_dummy)
+tapply(activeindividuals$problem_care_cost_dummy, activeindividuals$sexo, summary)
+#Comment -> Women had less access to care aid because of costs 
+
+
+## Under medical treatment in the last 12 months
+activeindividuals <- activeindividuals %>%
+  mutate(
+    s28 = ifelse(s28 >= 0, s28, NA),  
+    medical_treatment_dummy = case_when(
+      s28 == 22 ~ 0,  
+      s28 %in% c(1:21) ~ 1,  
+      TRUE ~ NA_real_  
+    )
+  )
+
+tapply(activeindividuals$medical_treatment_dummy, activeindividuals$sexo, summary)
+#Comment -> Women tend more to have been under medical treatment
+
+
+## Having some long term condition
+activeindividuals <- activeindividuals %>%
+  mutate(
+    permanent_health_condition = case_when(
+      s31_7 == 1 ~ 0,  
+      s31_7 == 0 ~ 1,  
+      TRUE ~ NA_real_  
+    )
+  )
+
+tapply(activeindividuals$permanent_health_condition, activeindividuals$sexo, summary)
+#Comment -> Women tend more to suffer from a long term health condition
+
+
+### =========================== Question 4: PCA =================================== ###
+
+
+## Creation composite variables
+work_composite <- activeindividuals[, c(
+  "o10",     #number of hours worked
+  "contract_dummy", 
+  "total_commute_hours_per_week",  
+  "o31"     #affiliated to social security
+)]
+
+health_composite <- activeindividuals[, c(
+  "disc_wg",
+  "problem_care_cost_dummy", 
+  "problem_get_to_hospital_dummy", 
+  "no_medical_care_dummy", 
+  "problem_appointment_dummy", 
+  "getting_to_hospital_dummy", 
+  "hospitalization_dummy", 
+  "s26a",            #number of health check ups last 12 months
+  "permanent_health_condition",
+  "medical_treatment_dummy"
+)]
+
+education_composite <- activeindividuals[, c(
+  "e6a",
+  "literacy_dummy",
+  "precarity_educ_dummy"
+)]
+
+table(activeindividuals$precarity_educ_dummy)
+
+## Centrer et réduire les données
+work_composite_norm <- as.data.frame(scale(work_composite, center = TRUE, scale = TRUE))
+education_composite_norm <- as.data.frame(scale(education_composite, center = TRUE, scale = TRUE))
+health_composite_norm <- as.data.frame(scale(health_composite, center = TRUE, scale = TRUE))
+
+
+## Use PCA 
+library(FactoMineR)
+library(factoextra)
+
+out.pca_health <- PCA(health_composite_norm, ncp = 6, graph = FALSE)
+get_eigenvalue(out.pca_health)
+
+out.pca_education <- PCA(education_composite_norm, ncp = 6, graph = FALSE)
+get_eigenvalue(out.pca_education)
+
+out.pca_work <- PCA(work_composite_norm, ncp = 6, graph = FALSE)
+get_eigenvalue(out.pca_work)
+
+#Using Kaiser method: keeping dimensions with eigenvalues >1
+
+#These 6 axes represent 53.68044% of the explained variance
+fviz_eig(out.pca_health, addlabels = TRUE) #we keep first six dimensions
+fviz_eig(out.pca_education, addlabels = TRUE) #we keep first six dimensions
+fviz_eig(out.pca_work, addlabels = TRUE) #we keep first six dimensions
+
+
+#Synthetic variable
+x <- out.pca_health$ind$coord[, 1:3]
+print(x)
+
+y <- out.pca_education$ind$coord[, 1:1]
+print(y)
+
+z <- out.pca_work$ind$coord[, 1:2]
+print(z)
+
+syn_var_x = (out.pca_health$eig[1,2]/100)*out.pca_health$ind$coord[,1] + (out.pca_health$eig[2,2]/100)*out.pca_health$ind$coord[,2] + (out.pca_health$eig[3,2]/100)*out.pca_health$ind$coord[,3] 
+print(syn_var_x)
+
+syn_var_y = (out.pca_education$eig[1,2]/100)*out.pca_education$ind$coord[,1]
+print(syn_var_y)
+
+syn_var_z = (out.pca_work$eig[1,2]/100)*out.pca_work$ind$coord[,1] + (out.pca_work$eig[2,2]/100)*out.pca_work$ind$coord[,2] 
+print(syn_var_z)
+
+activeindividuals$work_composite <- syn_var_z
+activeindividuals$education_composite <- syn_var_y
+activeindividuals$health_composite <- syn_var_x
+
+summary(activeindividuals$education_composite)
+
+
+### ===================== Question 5: Use clustering methods ========================= ###
+
+activeindividuals$log_income <- log(activeindividuals$ytrabajocor + 0,5)
+
+activeindividuals <- activeindividuals %>%
+  mutate(
+    sexo_dummy = case_when(
+      sexo == "Men" ~ 0,                 
+      sexo == "Women" ~ 1,       
+      TRUE ~ NA_real_             
+    )
+  )
+
+clustering_data <- activeindividuals[, c("log_income", "education_composite", "work_composite", "health_composite", "edad", "sexo_dummy")]
+
+clustering_data <- na.omit(clustering_data)
+
+clustering_data <- as.data.frame(scale(clustering_data))
+
+summary(clustering_data)
+
+
+## Elbow Method
+set.seed(123)
+
+elb_wss <- rep(0,times=10)
+for (k in 1:10) {
+  clus <- kmeans(clustering_data, centers = k)
+  elb_wss[k] <- clus$tot.
+}
+
+plot(1:10, elb_wss, type = "b", xlab = "Nb of clusters", ylab = "WSS")
+
+#We will keep 3 clusters
+set.seed(123)
+kmeans_result <- kmeans(clustering_data, centers = 3, nstart = 25)
+
+#Cluster Plot
+fviz_cluster(kmeans_result, data = clustering_data) +
+  labs(title = "K-means Clustering with 3 Clusters")
+
+
+## Clustering quality
+library(cluster)
+
+# Sample the data
+set.seed(123)
+sample_indices <- sample(1:nrow(clustering_data), size = 20000)  # random sample size
+sample_data <- clustering_data[sample_indices, ]
+
+# Compute silhouette scores and plot it
+silhouette_scores <- silhouette(kmeans_result$cluster[sample_indices], dist(sample_data))
+plot(silhouette_scores, border = NA, main = "Silhouette Plot for 3 Clusters (Sampled Data)")
+
+#Cluster stats
+clustering_data$cluster <- kmeans_result$cluster
+cluster_summary_stats <- clustering_data %>%
+  group_by(cluster) %>%
+  summarize(across(everything(), mean, na.rm = TRUE))
+print(cluster_summary_stats)
+
+
+
+
+### ========================= Question 6: Tobit Model ============================= ###
+
+library(sampleSelection)
+
+# Define the "working" variable based on o1 and o3
+activeindividuals$working <- ifelse(activeindividuals$o1 == 1 | activeindividuals$o3 == 1, 1, 0)
+table(activeindividuals$working)
+
+# We exclude + 60 years individuals
+activeindividuals <- activeindividuals %>%
+  filter(edad <= 60)
+
+# Tobit II model
+tobit2_model <- selection(
+  selection = working ~ sexo_dummy + edad + e6a,   # Selection equation
+  outcome = log_income ~ sexo_dummy + edad + e6a + health_composite + o10 + rama1 + total_commute_hours_per_week + area + contract_dummy + o20,  # Outcome equation
+  data = activeindividuals
+)
+
+#results
+summary(tobit2_model)
+
+
+
+### =================== Question 7: Using the Oaxaca Blinder method =================== ###
+
+library(oaxaca)
+
+oaxaca_data <- activeindividuals[, c("overtime","area","contract_dummy", "o20","working", "rama1", "health_composite", "work_composite", "education_composite","sexo_dummy", "edad", "e6a", "yoprcor")]
+
+oaxaca_data <- oaxaca_data %>%
+  mutate(across(c(work_composite, education_composite, health_composite), scale))
+
+# There are NAs
+summary(oaxaca_data)
+
+
+# Check the proportion of missing values by gender
+oaxaca_data %>%
+  group_by(sexo_dummy) %>%
+  summarize(
+    total = n(),
+    missing_income = sum(is.na(yoprcor)),
+    proportion_missing = mean(is.na(yoprcor))
+  )
+oaxaca_data %>%
+  group_by(sexo_dummy) %>%
+  summarize(
+    total = n(),
+    missing_rama1 = sum(is.na(rama1)),
+    proportion_missing = mean(is.na(rama1))
+  )
+#Comment -> removing rows with NA could bias results, as women are overrepresented among NA values
+
+# Inputting income = 0 for NA
+oaxaca_data <- oaxaca_data %>%
+  mutate(yoprcor = ifelse(is.na(yoprcor), 0, yoprcor))
+
+summary(oaxaca_data)
+
+# Convert specific composite matrix columns into vectors
+oaxaca_data$health_composite <- as.vector(oaxaca_data$health_composite)
+oaxaca_data$work_composite <- as.vector(oaxaca_data$work_composite)
+oaxaca_data$education_composite <- as.vector(oaxaca_data$education_composite)
+
+
+# Inputting missing values for the rest of the variables
+imputed_data <- mice(oaxaca_data, method = "pmm", m = 3)
+summary(imputed_data)
+oaxaca_data <- complete(imputed_data)
+
+summary(oaxaca_data)
+print(oaxaca_data)
+
+# Oaxaca Decomposition
+OB1 <- oaxaca(
+  yoprcor ~ overtime + area + contract_dummy + o20 + working + rama1 + health_composite +
+        edad + e6a | sexo_dummy,
+  data = oaxaca_data
+)
+
+plot(OB1, components = c("endowments","coefficients"))
+
+# the wage gap
+OB1$y
+
+OB1$twofold$overall
+
+# Decomposing the unexplained part following Neumark
+plot(OB1, 
+     decomposition = "twofold", 
+     group.weight = -1,  # Adjust this to the desired group weight
+     unexplained.split = TRUE, 
+     components = c("unexplained A", "unexplained B"), 
+     component.labels = c("unexplained A" = "In Favor of Men", 
+                          "unexplained B" = "Against Women"),
+     variables = c("edad", "e6a", "working"), 
+     variable.labels = c("edad" = "Years of Age", 
+                         "e6a" = "Education Level Attained", 
+                         "working" = "Working Status"))
+
+
+
+
+
+
+
+
+
+```
+
+\newpage
+
+# References
