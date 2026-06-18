@@ -1,3 +1,6 @@
+# CASEN data — large public file (~1.6 GB), never committed
+data/
+
 # R workspace files
 .RData
 .Rhistory
