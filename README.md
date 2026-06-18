@@ -1,6 +1,6 @@
 # Gender Wage Gap in Chile — Master's Project
 
-Replication code for a master's project analysing the gender wage gap in Chile using the **CASEN 2022** survey (*Encuesta de Caracterización Socioeconómica Nacional*).
+Replication code for a master's project done with my colleage Dorian Marty,analysing the gender wage gap in Chile using the **CASEN 2022** survey (*Encuesta de Caracterización Socioeconómica Nacional*).
 
 ---
 
