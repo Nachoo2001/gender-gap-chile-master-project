@@ -15,17 +15,14 @@ csl: isara-iso-690.csl
 ---
 
 ```{r include=FALSE}
-library(haven)
-library(dplyr)
-library(summarytools)
-library(ggplot2)
-library(stargazer)
-library(gmodels)
-library(stargazer)
-library(mice)
+if (!requireNamespace("pacman", quietly = TRUE)) install.packages("pacman")
+pacman::p_load(
+  haven, here, dplyr, summarytools, ggplot2, stargazer, gmodels, mice,
+  FactoMineR, factoextra, cluster, sampleSelection, oaxaca
+)
 
 #Load data set
-CASEN_2022 <- read_dta("~/Downloads/CASEN 2022.dta")
+CASEN_2022 <- read_dta(here("data", "CASEN 2022.dta"))
 
 ### ========== Question 1: Create a sample of active individuals according to ILO) =========== ###
 
@@ -397,7 +394,7 @@ table(activeindividuals$precarity_educ_dummy)
 tapply(activeindividuals$precarity_educ_dummy, activeindividuals$sexo, summary)
 ```
 
-Even though women tend to be more educated than men they seem on average more exposed to instability from external factors, susceptible to interrupt or ends their educational careers. We computed a dummy variable `precarity_educ_dummy` taking the value of 0 when the individual had to stop their educational path because of reasons as "Pregnancy, maternity or paternity" or "Help around the house or household chores" and the value of 1 if the individual is not studying in the present because he already finished studying or because he had the will to do so.
+Even though women tend to be more educated than men they seem on average more exposed to instability from external factors, susceptible to interrupt or ends their educational careers. We computed a dummy variable `precarity_educ_dummy` taking the value of 1 when the individual had to stop their educational path because of reasons such as "Pregnancy, maternity or paternity" or "Help around the house or household chores", and the value of 0 otherwise.
 
 ### Health variables
 
@@ -465,17 +462,18 @@ work_composite <- activeindividuals[, c(
 
 health_composite <- activeindividuals[, c(
   "disc_wg",
-  "problem_care_cost_dummy", 
-  "problem_get_to_hospital_dummy", 
-  "no_medical_care_dummy", 
-  "problem_appointment_dummy", 
-  "getting_to_hospital_dummy", 
-  "hospitalization_dummy", 
-  "s26a"
+  "problem_care_cost_dummy",
+  "problem_get_to_hospital_dummy",
+  "no_medical_care_dummy",
+  "problem_appointment_dummy",
+  "getting_to_hospital_dummy",
+  "hospitalization_dummy",
+  "s26a",
+  "permanent_health_condition",
+  "medical_treatment_dummy"
 )]
 
 education_composite <- activeindividuals[, c(
-  "educ", 
   "e6a",
   "literacy_dummy",
   "precarity_educ_dummy"
@@ -490,10 +488,7 @@ health_composite_norm <- as.data.frame(scale(health_composite, center = TRUE, sc
 ```
 
 ```{r include=FALSE}
-## Use PCA 
-library(FactoMineR)
-library(factoextra)
-
+## Use PCA
 out.pca_health <- PCA(health_composite_norm, ncp = 6, graph = FALSE)
 get_eigenvalue(out.pca_health)
 
@@ -581,7 +576,7 @@ Using the k-means clustering algorithm, we determined the optimal number of clus
 As we saw in class, the elbow method is a graphical approach used to determine the optimal number of clusters in a data set. We plotted the within-cluster sum of squares (WSS) for each number of cluster. This measures how tightly data points fit within their assigned clusters, with lower values indicating better fit. The logic is that as the number of clusters increases, WSS decreases, but the rate of decrease slows down. The optimal number of clusters is typically at the "elbow point," where the decrease in WSS begins to level off, indicating diminishing returns from adding more clusters. In our case we chose to keep three clusters, as it balances the trade-off between capturing meaningful structure in the data and avoiding overfitting with too many clusters
 
 ```{r echo=FALSE}
-activeindividuals$log_income <- log(activeindividuals$ytrabajocor + 0,5)
+activeindividuals$log_income <- log(activeindividuals$ytrabajocor + 0.5)
 #table(activeindividuals$log_income)
 
 activeindividuals <- activeindividuals %>%
@@ -605,7 +600,7 @@ set.seed(123)
 elb_wss <- rep(0,times=10)
 for (k in 1:10) {
   clus <- kmeans(clustering_data, centers = k)
-  elb_wss[k] <- clus$tot.
+  elb_wss[k] <- clus$tot.withinss
 }
 
 plot(1:10, elb_wss, type = "b", xlab = "Nb of clusters", ylab = "WSS")
@@ -671,7 +666,7 @@ We incorporated the composite variables created earlier to control for various c
 #### Results
 
 ```{r echo=FALSE}
-summary(tobit2_model)``
+summary(tobit2_model)
 ```
 
 We observe 7113 censored observations for our dependent variable, representing approximately 9% of the total sample. This highlights the critical need to address selection bias in the analysis. The Tobit model addresses this issue by estimating the potential incomes of these censored individuals based on their characteristics.
@@ -745,7 +740,7 @@ Next, we checked for missing values in the data set. There are indeed NA values 
 For other variables with missing data, predictive mean matching (PMM) was employed using the mice package. This method imputes missing values by predicting plausible values based on observed data while preserving the original variable's distribution.
 
 ```{r echo=FALSE}
-OB$y
+OB1$y
 ```
 
 The y component of the resulting "oaxaca"-class object indicates that the mean real wage is \$629469.9 for men (Group A) and \$494830.2 for women, leaving the difference of approximately 27.22% be explained by the Blinder-Oaxaca decomposition.

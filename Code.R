@@ -1,18 +1,13 @@
 ################ Estimation of the gender wage gap in Chile (2022) ######################
 
-library(haven)
-library(dplyr)
-library(summarytools)
-library(ggplot2)
-library(stargazer)
-library(gmodels)
-library(stargazer)
-library(mice)
-
+if (!requireNamespace("pacman", quietly = TRUE)) install.packages("pacman")
+pacman::p_load(
+  haven, here, dplyr, summarytools, ggplot2, stargazer, gmodels, mice,
+  FactoMineR, factoextra, cluster, sampleSelection, oaxaca
+)
 
 #Load data set
-CASEN_2022 <- read_dta("~/Downloads/CASEN 2022.dta")
-View(CASEN_2022)
+CASEN_2022 <- read_dta(here("data", "CASEN 2022.dta"))
 
 
 ### ========== Question 1: Create a sample of active individuals according to ILO) =========== ###
@@ -449,8 +444,8 @@ activeindividuals <- activeindividuals %>%
   mutate(
     e5a = ifelse(e5a >= 0, e5a, NA),
     precarity_educ_dummy = case_when(
-      e5a %in% c(7, 8, 9, 10) ~ 1,   # No
-      e5a %in% c(1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 15) ~ 0,   # Yes
+      e5a %in% c(7, 8, 9, 10) ~ 0,   # No precarity
+      e5a %in% c(1, 2, 3, 4, 5, 6, 11, 12, 13, 14, 15) ~ 1,   # Precarity reasons
       TRUE ~ NA_real_
     ))
 
@@ -536,7 +531,7 @@ tapply(activeindividuals$no_medical_care_dummy, activeindividuals$sexo, summary)
 ## Because of problems getting to surgery or hospital
 activeindividuals <- activeindividuals %>%
   mutate(
-    ifelse(s19a >= 0, s19a, NA),
+    s19a = ifelse(s19a >= 0, s19a, NA),
     getting_to_hospital_dummy = case_when(
       s19a == 2 ~ 0,                  # No
       s19a == 1 ~ 1,       # Yes
@@ -551,7 +546,7 @@ tapply(activeindividuals$getting_to_hospital_dummy, activeindividuals$sexo, summ
 ## Problems getting an appointment/attention
 activeindividuals <- activeindividuals %>%
   mutate(
-    ifelse(s19b >= 0, s19b, NA),
+    s19b = ifelse(s19b >= 0, s19b, NA),
     problem_appointment_dummy = case_when(
       s19b == 2 ~ 0,                  # No
       s19b == 1 ~ 1,       # Yes
@@ -566,7 +561,7 @@ tapply(activeindividuals$problem_appointment_dummy, activeindividuals$sexo, summ
 ## Problems being attended to in the establishment
 activeindividuals <- activeindividuals %>%
   mutate(
-    ifelse(s19c >= 0, s19c, NA),
+    s19c = ifelse(s19c >= 0, s19c, NA),
     problem_get_to_hospital_dummy = case_when(
       s19c == 2 ~ 0,                  # No
       s19c == 1 ~ 1,       # Yes
@@ -661,10 +656,7 @@ education_composite_norm <- as.data.frame(scale(education_composite, center = TR
 health_composite_norm <- as.data.frame(scale(health_composite, center = TRUE, scale = TRUE))
 
 
-## Use PCA 
-library(FactoMineR)
-library(factoextra)
-
+## Use PCA
 out.pca_health <- PCA(health_composite_norm, ncp = 6, graph = FALSE)
 get_eigenvalue(out.pca_health)
 
@@ -710,7 +702,7 @@ summary(activeindividuals$education_composite)
 
 ### ===================== Question 5: Use clustering methods ========================= ###
 
-activeindividuals$log_income <- log(activeindividuals$ytrabajocor + 0,5)
+activeindividuals$log_income <- log(activeindividuals$ytrabajocor + 0.5)
 
 activeindividuals <- activeindividuals %>%
   mutate(
@@ -736,7 +728,7 @@ set.seed(123)
 elb_wss <- rep(0,times=10)
 for (k in 1:10) {
   clus <- kmeans(clustering_data, centers = k)
-  elb_wss[k] <- clus$tot.
+  elb_wss[k] <- clus$tot.withinss
 }
 
 plot(1:10, elb_wss, type = "b", xlab = "Nb of clusters", ylab = "WSS")
@@ -751,7 +743,6 @@ fviz_cluster(kmeans_result, data = clustering_data) +
 
 
 ## Clustering quality
-library(cluster)
 
 # Sample the data
 set.seed(123)
@@ -774,8 +765,6 @@ print(cluster_summary_stats)
 
 ### ========================= Question 6: Tobit Model ============================= ###
 
-library(sampleSelection)
-
 # Define the "working" variable based on o1 and o3
 activeindividuals$working <- ifelse(activeindividuals$o1 == 1 | activeindividuals$o3 == 1, 1, 0)
 table(activeindividuals$working)
@@ -797,8 +786,6 @@ summary(tobit2_model)
 
 
 ### =================== Question 7: Using the Oaxaca Blinder method =================== ###
-
-library(oaxaca)
 
 oaxaca_data <- activeindividuals[, c("overtime","area","contract_dummy", "o20","working", "rama1", "health_composite", "work_composite", "education_composite","sexo_dummy", "edad", "e6a", "yoprcor")]
 
