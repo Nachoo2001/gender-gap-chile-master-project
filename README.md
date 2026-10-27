@@ -8,8 +8,8 @@ Replication code for a master's project done with my colleage Dorian Marty, anal
 
 | File | Description |
 |---|---|
-| `Code.R` | Main analysis script — data cleaning, descriptive stats, PCA, clustering, Tobit, Oaxaca-Blinder |
-| `Gender wage gap.Rmd` | Full report in R Markdown — combines the analysis with interpretation and figures |
+| `analysis.R` | Main analysis script — data cleaning, descriptive stats, PCA, clustering, Tobit, Oaxaca-Blinder |
+| `gender_wage_gap_chile.Rmd` | Full report in R Markdown — combines the analysis with interpretation and figures |
 
 ## How to run
 
@@ -18,7 +18,7 @@ Replication code for a master's project done with my colleage Dorian Marty, anal
    data/CASEN 2022.dta
    ```
 2. Open the project in RStudio (or set the working directory to the project root)
-3. Run `Code.R` for the full analysis, or knit `Gender wage gap.Rmd` for the report
+3. Run `analysis.R` for the full analysis, or knit `gender_wage_gap_chile.Rmd` for the report
 
 > **Note:** The CASEN 2022 file is approximately 1.6 GB and cannot be hosted in this repository. It is freely available from the link above.
 
